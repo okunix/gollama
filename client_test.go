@@ -63,6 +63,21 @@ func TestDetails(t *testing.T) {
 	t.Logf("details: %+v", models)
 }
 
+func TestCreate(t *testing.T) {
+	err := client.Create(
+		t.Context(),
+		CreateModel{
+			Model:  "alpaca",
+			From:   "gemma3",
+			System: "You are Alpaca, a helpful AI assistant. You only answer with Emojis.",
+		},
+	)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+}
+
 func TestDelete(t *testing.T) {
 	err := client.Delete(t.Context(), "alpaca")
 	if err != nil {

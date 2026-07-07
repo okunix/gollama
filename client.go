@@ -232,3 +232,27 @@ func (c *Client) Delete(ctx context.Context, model string) error {
 	}
 	return nil
 }
+
+func (c *Client) Create(ctx context.Context, model CreateModel) error {
+	model.Stream = false
+	url := c.host + "/api/create"
+	body, _ := c.toBody(model)
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return c.parseError(resp)
+	}
+	return nil
+}
+
+func (c *Client) CreateStream(ctx context.Context, model CreateModel) (<-chan string, error) {
+	model.Stream = true
+	statusChan := make(chan string)
+	return statusChan, nil
+}

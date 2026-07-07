@@ -1,6 +1,10 @@
 package gollama
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 // type Metrics struct {
 // 	TotalDuration      int64 `json:"total_duration"`
@@ -57,4 +61,54 @@ type ModelDetails struct {
 	Template     string         `json:"template"`
 	Capabilities []string       `json:"capabilities"`
 	ModelInfo    map[string]any `json:"model_info"`
+}
+
+type CreateModel struct {
+	Model      string         `json:"model"`
+	From       string         `json:"from"`
+	Template   string         `json:"template"`
+	License    string         `json:"license"`
+	System     string         `json:"system"`
+	Parameters map[string]any `json:"parameters"`
+	Messages   []Message      `json:"messages"`
+	Quantize   string         `json:"quantize"`
+	Stream     bool           `json:"stream"`
+}
+
+func (c CreateModel) Validate() error {
+	if len(strings.TrimSpace(c.Model)) == 0 {
+		return fmt.Errorf("model name is required")
+	}
+	return nil
+}
+
+type Role string
+
+const (
+	SYSTEM    Role = "system"
+	USER      Role = "user"
+	ASSISTANT Role = "assistant"
+	TOOL      Role = "tool"
+)
+
+type Message struct {
+	Role    Role   `json:"role"`
+	Content string `json:"content"`
+	// each image must encoded with base64
+	Images    []string   `json:"images"`
+	ToolCalls []ToolCall `json:"tool_calls"`
+}
+
+type ToolCall struct {
+	Function ToolCallFunction `json:"function"`
+}
+
+type ToolCallFunction struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Arguments   map[string]any `json:"arguments"`
+}
+
+type Status struct {
+	Status string `json:"status"`
 }
