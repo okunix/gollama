@@ -109,6 +109,9 @@ type ToolCallFunction struct {
 	Arguments   map[string]any `json:"arguments"`
 }
 
-type Status struct {
-	Status string `json:"status"`
+type CreateStatus struct {
+	Status    string `json:"status"`
+	Digest    string `json:"digest"`
+	Total     int64  `json:"total"`
+	Completed int64  `json:"completed"`
 }

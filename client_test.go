@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -77,8 +78,10 @@ func TestCreate(t *testing.T) {
 }
 
 func TestCreateStream(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
 	streamChan, errChan := client.CreateStream(
-		t.Context(),
+		ctx,
 		CreateModel{
 			Model:  "alpaca",
 			From:   "gemma3",
@@ -93,7 +96,7 @@ Outer:
 			if !ok {
 				break Outer
 			}
-			t.Log("status log: " + status)
+			t.Logf("status log: %+v", status)
 		case err := <-errChan:
 			t.Error(err.Error())
 			break Outer

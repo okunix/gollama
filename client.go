@@ -248,9 +248,9 @@ func (c *Client) Create(ctx context.Context, model CreateModel) error {
 func (c *Client) CreateStream(
 	ctx context.Context,
 	model CreateModel,
-) (<-chan string, <-chan error) {
+) (<-chan CreateStatus, <-chan error) {
 	model.Stream = true
-	statusChan := make(chan string)
+	statusChan := make(chan CreateStatus)
 	errChan := make(chan error)
 
 	go func() {
@@ -262,8 +262,14 @@ func (c *Client) CreateStream(
 		}
 		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
+			select {
+			case <-ctx.Done():
+				errChan <- ctx.Err()
+				return
+			default:
+			}
 			line := scanner.Text()
-			var status Status
+			var status CreateStatus
 			err := json.Unmarshal([]byte(line), &status)
 			if err != nil {
 				var ollamaError Error
@@ -275,7 +281,7 @@ func (c *Client) CreateStream(
 				errChan <- ollamaError
 				return
 			}
-			statusChan <- status.Status
+			statusChan <- status
 		}
 	}()
 
