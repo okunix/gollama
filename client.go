@@ -144,3 +144,29 @@ func (c *Client) Tags(ctx context.Context) ([]Model, error) {
 
 	return tagsResponse.Models, nil
 }
+
+func (c *Client) Ps(ctx context.Context) ([]Ps, error) {
+	type response struct {
+		Models []Ps `json:"models"`
+	}
+	url := c.host + "/api/ps"
+	req, err := c.newRequest(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseError(resp)
+	}
+
+	var psResponse response
+	err = json.NewDecoder(resp.Body).Decode(&psResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return psResponse.Models, nil
+}

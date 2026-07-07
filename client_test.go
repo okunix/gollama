@@ -43,5 +43,13 @@ func TestTags(t *testing.T) {
 		return
 	}
 	t.Logf("models: %+v", models)
+}
 
+func TestPS(t *testing.T) {
+	models, err := client.Ps(t.Context())
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Logf("ps: %+v", models)
 }

@@ -37,3 +37,14 @@ type ModelDetail struct {
 	ParameterSize     string   `json:"parameter_size"`
 	QuantizationLevel string   `json:"quantization_level"`
 }
+
+type Ps struct {
+	Name          string      `json:"name"`
+	Model         string      `json:"model"`
+	Size          int64       `json:"size"`
+	Digest        string      `json:"digest"`
+	Details       ModelDetail `json:"details"`
+	ExpiresAt     time.Time   `json:"expires_at"`
+	SizeVRAM      int64       `json:"size_vram"`
+	ContextLength int64       `json:"context_length"`
+}
