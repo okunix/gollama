@@ -73,6 +73,21 @@ func (c *Client) newRequest(
 	return req, nil
 }
 
+func (c *Client) Ping(ctx context.Context) error {
+	req, err := c.newRequest(ctx, "GET", c.host, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return c.parseError(resp)
+	}
+	return nil
+}
+
 func (c *Client) Version(ctx context.Context) (string, error) {
 	type response struct {
 		Version string `json:"version"`
@@ -102,21 +117,6 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 	}
 
 	return getVersionResponse.Version, nil
-}
-
-func (c *Client) Ping(ctx context.Context) error {
-	req, err := c.newRequest(ctx, "GET", c.host, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return c.parseError(resp)
-	}
-	return nil
 }
 
 func (c *Client) Tags(ctx context.Context) ([]Model, error) {
