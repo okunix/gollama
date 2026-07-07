@@ -1,0 +1,39 @@
+package gollama
+
+import "time"
+
+// type Metrics struct {
+// 	TotalDuration      int64 `json:"total_duration"`
+// 	LoadDuration       int64 `json:"load_duration"`
+// 	PromptEvalCount    int64 `json:"prompt_eval_count"`
+// 	PromptEvalDuration int64 `json:"prompt_eval_duration"`
+// 	EvalCount          int64 `json:"eval_count"`
+// 	EvalDuration       int64 `json:"eval_duration"`
+// }
+
+type Error struct {
+	Err string `json:"error"`
+}
+
+func (e Error) Error() string {
+	return e.Err
+}
+
+type Model struct {
+	Name        string      `json:"name"`
+	Model       string      `json:"model"`
+	RemoteModel string      `json:"remote_model"`
+	RemoteHost  string      `json:"remote_host"`
+	ModifiedAt  time.Time   `json:"modified_at"`
+	Size        int64       `json:"size"`
+	Digest      string      `json:"digest"`
+	Details     ModelDetail `json:"details"`
+}
+
+type ModelDetail struct {
+	Format            string   `json:"format"`
+	Family            string   `json:"family"`
+	Families          []string `json:"families"`
+	ParameterSize     string   `json:"parameter_size"`
+	QuantizationLevel string   `json:"quantization_level"`
+}

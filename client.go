@@ -49,6 +49,15 @@ func WithTimeout(timeout time.Duration) clientOption {
 	}
 }
 
+func (c *Client) parseError(resp *http.Response) error {
+	var ollamaErr Error
+	err := json.NewDecoder(resp.Body).Decode(&ollamaErr)
+	if err != nil {
+		return fmt.Errorf("ollama error status code: %d", resp.StatusCode)
+	}
+	return fmt.Errorf("ollama error response: %w", error(ollamaErr))
+}
+
 func (c *Client) newRequest(
 	ctx context.Context,
 	method, url string,
@@ -82,14 +91,14 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("failed to get ollama version: %w", err)
+		return "", c.parseError(resp)
 	}
 
 	var getVersionResponse response
 
 	err = json.NewDecoder(resp.Body).Decode(&getVersionResponse)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode response object: %w", err)
+		return "", err
 	}
 
 	return getVersionResponse.Version, nil
@@ -105,7 +114,33 @@ func (c *Client) Ping(ctx context.Context) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to ping server: not ok status code")
+		return c.parseError(resp)
 	}
 	return nil
+}
+
+func (c *Client) Tags(ctx context.Context) ([]Model, error) {
+	type response struct {
+		Models []Model `json:"models"`
+	}
+	url := c.host + "/api/tags"
+	req, err := c.newRequest(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseError(resp)
+	}
+
+	var tagsResponse response
+	err = json.NewDecoder(resp.Body).Decode(&tagsResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return tagsResponse.Models, nil
 }

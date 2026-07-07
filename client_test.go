@@ -35,3 +35,13 @@ func TestVersion(t *testing.T) {
 	}
 	t.Log("ollama version: " + version)
 }
+
+func TestTags(t *testing.T) {
+	models, err := client.Tags(t.Context())
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Logf("models: %+v", models)
+
+}
