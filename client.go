@@ -212,3 +212,23 @@ func (c *Client) ShowModelDetails(
 
 	return detailsResponse, nil
 }
+
+func (c *Client) Delete(ctx context.Context, model string) error {
+	type request struct {
+		Model string `json:"model"`
+	}
+	url := c.host + "/api/delete"
+	body, _ := c.toBody(request{Model: model})
+	req, err := c.newRequest(ctx, "DELETE", url, body)
+	if err != nil {
+		return err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return c.parseError(resp)
+	}
+	return nil
+}

@@ -62,3 +62,11 @@ func TestDetails(t *testing.T) {
 	}
 	t.Logf("details: %+v", models)
 }
+
+func TestDelete(t *testing.T) {
+	err := client.Delete(t.Context(), "alpaca")
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+}
