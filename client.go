@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -48,6 +49,21 @@ func WithTimeout(timeout time.Duration) clientOption {
 	}
 }
 
+func (c *Client) newRequest(
+	ctx context.Context,
+	method, url string,
+	body io.Reader,
+) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	if len(c.token) > 0 {
+		req.Header.Add("Authorization", "Bearer "+c.token)
+	}
+	return req, nil
+}
+
 func (c *Client) Version(ctx context.Context) (string, error) {
 	type response struct {
 		Version string `json:"version"`
@@ -55,7 +71,7 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 
 	url := c.host + "/api/version"
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := c.newRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +96,7 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 }
 
 func (c *Client) Ping(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", c.host, nil)
+	req, err := c.newRequest(ctx, "GET", c.host, nil)
 	if err != nil {
 		return err
 	}
