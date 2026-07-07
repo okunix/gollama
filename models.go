@@ -48,3 +48,13 @@ type Ps struct {
 	SizeVRAM      int64       `json:"size_vram"`
 	ContextLength int64       `json:"context_length"`
 }
+
+type ModelDetails struct {
+	Parameters   string         `json:"parameters"`
+	License      string         `json:"license"`
+	ModifiedAt   time.Time      `json:"modified_at"`
+	Details      ModelDetail    `json:"details"`
+	Template     string         `json:"template"`
+	Capabilities []string       `json:"capabilities"`
+	ModelInfo    map[string]any `json:"model_info"`
+}

@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -70,6 +71,7 @@ func (c *Client) newRequest(
 	if len(c.token) > 0 {
 		req.Header.Add("Authorization", "Bearer "+c.token)
 	}
+	req.Header.Add("Content-Type", "application/json")
 	return req, nil
 }
 
@@ -169,4 +171,44 @@ func (c *Client) Ps(ctx context.Context) ([]Ps, error) {
 	}
 
 	return psResponse.Models, nil
+}
+
+func (c *Client) toBody(a any) (io.Reader, error) {
+	b, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
+}
+
+func (c *Client) ShowModelDetails(
+	ctx context.Context,
+	model string,
+	verbose bool,
+) (ModelDetails, error) {
+	type request struct {
+		Model   string `json:"model"`
+		Verbose bool   `json:"verbose"`
+	}
+	url := c.host + "/api/show"
+	body, _ := c.toBody(request{Model: model, Verbose: verbose})
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return ModelDetails{}, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return ModelDetails{}, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return ModelDetails{}, c.parseError(resp)
+	}
+
+	var detailsResponse ModelDetails
+	err = json.NewDecoder(resp.Body).Decode(&detailsResponse)
+	if err != nil {
+		return ModelDetails{}, err
+	}
+
+	return detailsResponse, nil
 }

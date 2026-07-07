@@ -53,3 +53,12 @@ func TestPS(t *testing.T) {
 	}
 	t.Logf("ps: %+v", models)
 }
+
+func TestDetails(t *testing.T) {
+	models, err := client.ShowModelDetails(t.Context(), "gemma3", false)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Logf("details: %+v", models)
+}
