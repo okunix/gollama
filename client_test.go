@@ -64,7 +64,20 @@ func TestDetails(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	err := client.Create(
+	model := CreateModel{
+		Model:  "alpaca",
+		From:   "gemma3",
+		System: "You are Alpaca, a helpful AI assistant. You only answer with Emojis.",
+	}
+	err := client.Create(t.Context(), model)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+}
+
+func TestCreateStream(t *testing.T) {
+	streamChan, errChan := client.CreateStream(
 		t.Context(),
 		CreateModel{
 			Model:  "alpaca",
@@ -72,9 +85,19 @@ func TestCreate(t *testing.T) {
 			System: "You are Alpaca, a helpful AI assistant. You only answer with Emojis.",
 		},
 	)
-	if err != nil {
-		t.Error(err.Error())
-		return
+
+Outer:
+	for {
+		select {
+		case status, ok := <-streamChan:
+			if !ok {
+				break Outer
+			}
+			t.Log("status log: " + status)
+		case err := <-errChan:
+			t.Error(err.Error())
+			break Outer
+		}
 	}
 }
 

@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -56,7 +57,7 @@ func (c *Client) parseError(resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("ollama error status code: %d", resp.StatusCode)
 	}
-	return fmt.Errorf("ollama error response: %w", error(ollamaErr))
+	return fmt.Errorf("ollama error response: %w", ollamaErr)
 }
 
 func (c *Client) newRequest(
@@ -106,8 +107,9 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get ollama version: %w", err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return "", c.parseError(resp)
 	}
 
@@ -134,6 +136,8 @@ func (c *Client) Tags(ctx context.Context) ([]Model, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.parseError(resp)
 	}
@@ -160,6 +164,7 @@ func (c *Client) Ps(ctx context.Context) ([]Ps, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.parseError(resp)
 	}
@@ -200,6 +205,7 @@ func (c *Client) ShowModelDetails(
 	if err != nil {
 		return ModelDetails{}, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return ModelDetails{}, c.parseError(resp)
 	}
@@ -235,24 +241,60 @@ func (c *Client) Delete(ctx context.Context, model string) error {
 
 func (c *Client) Create(ctx context.Context, model CreateModel) error {
 	model.Stream = false
+	_, err := c.create(ctx, model)
+	return err
+}
+
+func (c *Client) CreateStream(
+	ctx context.Context,
+	model CreateModel,
+) (<-chan string, <-chan error) {
+	model.Stream = true
+	statusChan := make(chan string)
+	errChan := make(chan error)
+
+	go func() {
+		defer close(statusChan)
+		resp, err := c.create(ctx, model)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		scanner := bufio.NewScanner(resp.Body)
+		for scanner.Scan() {
+			line := scanner.Text()
+			var status Status
+			err := json.Unmarshal([]byte(line), &status)
+			if err != nil {
+				var ollamaError Error
+				err = json.Unmarshal([]byte(line), &ollamaError)
+				if err != nil {
+					errChan <- fmt.Errorf("failed to parse line into status object")
+					return
+				}
+				errChan <- ollamaError
+				return
+			}
+			statusChan <- status.Status
+		}
+	}()
+
+	return statusChan, errChan
+}
+
+func (c *Client) create(ctx context.Context, model CreateModel) (*http.Response, error) {
 	url := c.host + "/api/create"
 	body, _ := c.toBody(model)
 	req, err := c.newRequest(ctx, "POST", url, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return c.parseError(resp)
+		return nil, c.parseError(resp)
 	}
-	return nil
-}
-
-func (c *Client) CreateStream(ctx context.Context, model CreateModel) (<-chan string, error) {
-	model.Stream = true
-	statusChan := make(chan string)
-	return statusChan, nil
+	return resp, nil
 }
