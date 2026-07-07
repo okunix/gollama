@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
 	"time"
 )
@@ -248,44 +249,37 @@ func (c *Client) Create(ctx context.Context, model CreateModel) error {
 func (c *Client) CreateStream(
 	ctx context.Context,
 	model CreateModel,
-) (<-chan CreateStatus, <-chan error) {
+) (iter.Seq2[CreateStatus, error], error) {
 	model.Stream = true
-	statusChan := make(chan CreateStatus)
-	errChan := make(chan error)
-
-	go func() {
-		defer close(statusChan)
-		resp, err := c.create(ctx, model)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		scanner := bufio.NewScanner(resp.Body)
+	resp, err := c.create(ctx, model)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	return func(yield func(CreateStatus, error) bool) {
+		defer resp.Body.Close()
 		for scanner.Scan() {
-			select {
-			case <-ctx.Done():
-				errChan <- ctx.Err()
-				return
-			default:
-			}
 			line := scanner.Text()
 			var status CreateStatus
-			err := json.Unmarshal([]byte(line), &status)
-			if err != nil {
+
+			if err := json.Unmarshal([]byte(line), &status); err != nil {
 				var ollamaError Error
-				err = json.Unmarshal([]byte(line), &ollamaError)
-				if err != nil {
-					errChan <- fmt.Errorf("failed to parse line into status object")
+				if err := json.Unmarshal([]byte(line), &ollamaError); err != nil {
+					yield(CreateStatus{}, fmt.Errorf("failed to unmarshal json"))
 					return
 				}
-				errChan <- ollamaError
+				yield(CreateStatus{}, ollamaError)
 				return
 			}
-			statusChan <- status
-		}
-	}()
 
-	return statusChan, errChan
+			if !yield(status, nil) {
+				return
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			yield(CreateStatus{}, err)
+		}
+	}, nil
 }
 
 func (c *Client) create(ctx context.Context, model CreateModel) (*http.Response, error) {
