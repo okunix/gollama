@@ -179,3 +179,31 @@ type GenerateStreamResponse struct {
 	EvalDuration       int64     `json:"eval_duration"`
 	Error              *string   `json:"error,omitempty"`
 }
+
+type EmbedRequest struct {
+	Model      string         `json:"model"`
+	Input      string         `json:"input"`
+	Truncate   bool           `json:"truncate"`
+	Dimensions int64          `json:"dimensions,omitempty"`
+	KeepAlive  string         `json:"keep_alive,omitempty"`
+	Options    []EmbedOptions `json:"options"`
+}
+
+type EmbedOptions struct {
+	Seed        int64   `json:"seed"`
+	Temperature float64 `json:"temperature"`
+	TopK        int64   `json:"top_k"`
+	TopP        float64 `json:"top_p"`
+	MinP        float64 `json:"min_p"`
+	Stop        string  `json:"stop"`
+	NumCtx      int64   `json:"num_ctx"`
+	NumPredict  int64   `json:"num_predict"`
+}
+
+type EmbedResponse struct {
+	Model           string      `json:"model"`
+	Embeddings      [][]float64 `json:"embeddings"`
+	TotalDuration   int64       `json:"total_duration"`
+	LoadDuration    int64       `json:"load_duration"`
+	PromptEvalCount int64       `json:"prompt_eval_count"`
+}

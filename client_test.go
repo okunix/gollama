@@ -136,7 +136,7 @@ func TestPull(t *testing.T) {
 }
 
 func TestPullStream(t *testing.T) {
-	stream, err := client.PullStream(t.Context(), "gemma3:270m", false)
+	stream, err := client.PullStream(t.Context(), "embeddinggemma", false)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -148,4 +148,18 @@ func TestPullStream(t *testing.T) {
 		}
 		t.Logf("pull status: %s", status.Status)
 	}
+}
+
+func TestEmbed(t *testing.T) {
+	ctx := t.Context()
+	req := EmbedRequest{
+		Model: "embeddinggemma",
+		Input: "Why is the sky blue? Answer in five words.",
+	}
+	resp, err := client.Embed(ctx, req)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Logf("%+v\n", resp)
 }

@@ -524,3 +524,23 @@ func (c *Client) GenerateStream(
 		}
 	}, nil
 }
+
+func (c *Client) Embed(ctx context.Context, embedReq EmbedRequest) (EmbedResponse, error) {
+	var embedResp EmbedResponse
+	url := c.host + "/api/embed"
+	body, _ := c.toBody(embedReq)
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return embedResp, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return embedResp, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return embedResp, c.parseError(resp)
+	}
+	err = json.NewDecoder(resp.Body).Decode(&embedResp)
+	return embedResp, err
+}
