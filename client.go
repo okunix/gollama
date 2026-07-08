@@ -298,3 +298,24 @@ func (c *Client) create(ctx context.Context, model CreateModel) (*http.Response,
 	}
 	return resp, nil
 }
+
+func (c *Client) Copy(ctx context.Context, src, dest string) error {
+	type request struct {
+		Source      string `json:"source"`
+		Destination string `json:"destination"`
+	}
+	url := c.host + "/api/copy"
+	body, _ := c.toBody(request{Source: src, Destination: dest})
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return c.parseError(resp)
+	}
+	return nil
+}

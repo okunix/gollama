@@ -98,6 +98,27 @@ func TestCreateStream(t *testing.T) {
 	}
 }
 
+func TestCopy(t *testing.T) {
+	ctx := t.Context()
+	if err := client.Copy(ctx, "alpaca", "alpaca-copy"); err != nil {
+		t.Error(err.Error())
+		return
+	}
+	models, err := client.Tags(ctx)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Log("Models:")
+	for _, v := range models {
+		t.Logf("\t%s", v.Name)
+	}
+	if err := client.Delete(ctx, "alpaca-copy"); err != nil {
+		t.Error(err.Error())
+		return
+	}
+}
+
 func TestDelete(t *testing.T) {
 	err := client.Delete(t.Context(), "alpaca")
 	if err != nil {
