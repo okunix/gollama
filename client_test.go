@@ -126,3 +126,26 @@ func TestDelete(t *testing.T) {
 		return
 	}
 }
+
+func TestPull(t *testing.T) {
+	err := client.Pull(t.Context(), "gemma3", false)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+}
+
+func TestPullStream(t *testing.T) {
+	stream, err := client.PullStream(t.Context(), "gemma3:270m", false)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	for status, err := range stream {
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		t.Logf("pull status: %s", status.Status)
+	}
+}

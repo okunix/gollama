@@ -249,26 +249,26 @@ func (c *Client) Create(ctx context.Context, model CreateModel) error {
 func (c *Client) CreateStream(
 	ctx context.Context,
 	model CreateModel,
-) (iter.Seq2[CreateStatus, error], error) {
+) (iter.Seq2[Status, error], error) {
 	model.Stream = true
 	resp, err := c.create(ctx, model)
 	if err != nil {
 		return nil, err
 	}
 	scanner := bufio.NewScanner(resp.Body)
-	return func(yield func(CreateStatus, error) bool) {
+	return func(yield func(Status, error) bool) {
 		defer resp.Body.Close()
 		for scanner.Scan() {
 			line := scanner.Text()
-			var status CreateStatus
+			var status Status
 
-			if err := json.Unmarshal([]byte(line), &status); err != nil {
-				var ollamaError Error
-				if err := json.Unmarshal([]byte(line), &ollamaError); err != nil {
-					yield(CreateStatus{}, fmt.Errorf("failed to unmarshal json"))
-					return
-				}
-				yield(CreateStatus{}, ollamaError)
+			err := json.Unmarshal([]byte(line), &status)
+			if err != nil {
+				yield(Status{}, err)
+				return
+			}
+			if status.Error != nil {
+				yield(Status{}, Error{Err: *status.Error})
 				return
 			}
 
@@ -277,7 +277,7 @@ func (c *Client) CreateStream(
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			yield(CreateStatus{}, err)
+			yield(Status{}, err)
 		}
 	}, nil
 }
@@ -318,4 +318,74 @@ func (c *Client) Copy(ctx context.Context, src, dest string) error {
 		return c.parseError(resp)
 	}
 	return nil
+}
+
+func (c *Client) pull(
+	ctx context.Context,
+	model string,
+	insecure, stream bool,
+) (*http.Response, error) {
+	type request struct {
+		Model    string `json:"model"`
+		Insecure bool   `json:"insecure"`
+		Stream   bool   `json:"stream"`
+	}
+	url := c.host + "/api/pull"
+	requestModel := request{Model: model, Insecure: insecure, Stream: stream}
+	body, _ := c.toBody(requestModel)
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseError(resp)
+	}
+	return resp, nil
+}
+
+func (c *Client) Pull(ctx context.Context, model string, insecure bool) error {
+	_, err := c.pull(ctx, model, insecure, false)
+	return err
+}
+
+func (c *Client) PullStream(
+	ctx context.Context,
+	model string,
+	insecure bool,
+) (iter.Seq2[Status, error], error) {
+	resp, err := c.pull(ctx, model, insecure, true)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	return func(yield func(Status, error) bool) {
+		defer resp.Body.Close()
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			var status Status
+
+			err := json.Unmarshal([]byte(line), &status)
+			if err != nil {
+				yield(Status{}, err)
+				return
+			}
+			if status.Error != nil {
+				yield(Status{}, Error{Err: *status.Error})
+				return
+			}
+
+			if !yield(status, nil) {
+				return
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			yield(Status{}, err)
+			return
+		}
+	}, nil
 }

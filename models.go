@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -21,6 +22,12 @@ type Error struct {
 
 func (e Error) Error() string {
 	return e.Err
+}
+
+func parseError(line string) (Error, error) {
+	var ollamaError Error
+	err := json.Unmarshal([]byte(line), &ollamaError)
+	return ollamaError, err
 }
 
 type Model struct {
@@ -109,9 +116,10 @@ type ToolCallFunction struct {
 	Arguments   map[string]any `json:"arguments"`
 }
 
-type CreateStatus struct {
-	Status    string `json:"status"`
-	Digest    string `json:"digest"`
-	Total     int64  `json:"total"`
-	Completed int64  `json:"completed"`
+type Status struct {
+	Status    string  `json:"status"`
+	Digest    string  `json:"digest"`
+	Total     int64   `json:"total"`
+	Completed int64   `json:"completed"`
+	Error     *string `json:"error,omitempty"`
 }
