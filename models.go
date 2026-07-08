@@ -115,7 +115,7 @@ type GenerateRequest struct {
 	Images      []string         `json:"images,omitempty"`
 	Format      string           `json:"format,omitempty"`
 	System      string           `json:"system,omitempty"`
-	Stream      bool             `json:"stream,omitempty"`
+	Stream      bool             `json:"stream"`
 	Think       bool             `json:"bool,omitempty"`
 	Raw         bool             `json:"raw,omitempty"`
 	KeepAlive   string           `json:"keep_alive,omitempty"`
