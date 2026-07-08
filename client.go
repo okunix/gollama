@@ -459,3 +459,68 @@ func (c *Client) PushStream(
 		}
 	}, nil
 }
+
+func (c *Client) generate(ctx context.Context, genReq GenerateRequest) (*http.Response, error) {
+	body, _ := c.toBody(genReq)
+	url := c.host + "/api/generate"
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseError(resp)
+	}
+	return resp, nil
+}
+
+func (c *Client) Generate(ctx context.Context, genReq GenerateRequest) (GenerateResponse, error) {
+	genReq.Stream = false
+	var genResp GenerateResponse
+	resp, err := c.generate(ctx, genReq)
+	if err != nil {
+		return genResp, err
+	}
+	defer resp.Body.Close()
+	err = json.NewDecoder(resp.Body).Decode(&genResp)
+	return genResp, err
+}
+
+func (c *Client) GenerateStream(
+	ctx context.Context,
+	genReq GenerateRequest,
+) (iter.Seq2[GenerateStreamResponse, error], error) {
+	genReq.Stream = true
+	resp, err := c.generate(ctx, genReq)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	return func(yield func(GenerateStreamResponse, error) bool) {
+		defer resp.Body.Close()
+		for scanner.Scan() {
+			line := scanner.Text()
+			var genResp GenerateStreamResponse
+
+			err := json.Unmarshal([]byte(line), &genResp)
+			if err != nil {
+				yield(GenerateStreamResponse{}, err)
+				return
+			}
+			if genResp.Error != nil {
+				yield(GenerateStreamResponse{}, Error{Err: *genResp.Error})
+				return
+			}
+
+			if !yield(genResp, nil) {
+				return
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			yield(GenerateStreamResponse{}, err)
+		}
+	}, nil
+}

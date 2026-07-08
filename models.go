@@ -123,3 +123,75 @@ type Status struct {
 	Completed int64   `json:"completed"`
 	Error     *string `json:"error,omitempty"`
 }
+
+type GenerateRequest struct {
+	Model       string           `json:"model"`
+	Prompt      string           `json:"prompt,omitempty"`
+	Suffix      string           `json:"suffix,omitempty"`
+	Images      []string         `json:"images,omitempty"`
+	Format      string           `json:"format,omitempty"`
+	System      string           `json:"system,omitempty"`
+	Stream      bool             `json:"stream,omitempty"`
+	Think       bool             `json:"bool,omitempty"`
+	Raw         bool             `json:"raw,omitempty"`
+	KeepAlive   string           `json:"keep_alive,omitempty"`
+	Options     []GenerateOption `json:"options,omitempty"`
+	Logprobs    bool             `json:"lobprobs,omitempty"`
+	TopLogprobs int64            `json:"top_logprobs,omitempty"`
+}
+
+type GenerateOption struct {
+	Seed        int64    `json:"seed,omitempty"`
+	Temperature float64  `json:"temperature,omitempty"`
+	TopK        int64    `json:"top_k,omitempty"`
+	TopP        float64  `json:"top_p,omitempty"`
+	MinP        float64  `json:"min_p,omitempty"`
+	Stop        []string `json:"stop,omitempty"`
+	NumCtx      int64    `json:"num_ctx,omitempty"`
+	NumPredict  int64    `json:"num_predict,omitempty"`
+}
+
+type GenerateResponse struct {
+	Model              string    `json:"model"`
+	CreatedAt          time.Time `json:"created_at"`
+	Response           string    `json:"response"`
+	Thinking           string    `json:"thinking"`
+	Done               bool      `json:"done"`
+	DoneReason         string    `json:"done_reason"`
+	TotalDuration      int64     `json:"total_duration"`
+	LoadDuration       int64     `json:"load_duration"`
+	PromptEvalCount    int64     `json:"prompt_eval_count"`
+	PromptEvalDuration int64     `json:"prompt_eval_duration"`
+	EvalCount          int64     `json:"eval_count"`
+	EvalDuration       int64     `json:"eval_duration"`
+	Logprobs           []Logprob `json:"logprobs"`
+}
+
+type Logprob struct {
+	Token       string       `json:"token"`
+	Logprob     int64        `json:"logprob"`
+	Bytes       []int64      `json:"bytes"`
+	TopLogprobs []TopLogprob `json:"top_logprobs"`
+}
+
+type TopLogprob struct {
+	Token   string  `json:"token"`
+	Logprob int64   `json:"logprob"`
+	Bytes   []int64 `json:"bytes"`
+}
+
+type GenerateStreamResponse struct {
+	Model              string    `json:"model"`
+	CreatedAt          time.Time `json:"created_at"`
+	Response           string    `json:"response"`
+	Thinking           string    `json:"thinking"`
+	Done               bool      `json:"done"`
+	DoneReason         string    `json:"done_reason"`
+	TotalDuration      int64     `json:"total_duration"`
+	LoadDuration       int64     `json:"load_duration"`
+	PromptEvalCount    int64     `json:"prompt_eval_count"`
+	PromptEvalDuration int64     `json:"prompt_eval_duration"`
+	EvalCount          int64     `json:"eval_count"`
+	EvalDuration       int64     `json:"eval_duration"`
+	Error              *string   `json:"error,omitempty"`
+}
