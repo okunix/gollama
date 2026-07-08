@@ -1,20 +1,10 @@
 package gollama
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 )
-
-// type Metrics struct {
-// 	TotalDuration      int64 `json:"total_duration"`
-// 	LoadDuration       int64 `json:"load_duration"`
-// 	PromptEvalCount    int64 `json:"prompt_eval_count"`
-// 	PromptEvalDuration int64 `json:"prompt_eval_duration"`
-// 	EvalCount          int64 `json:"eval_count"`
-// 	EvalDuration       int64 `json:"eval_duration"`
-// }
 
 type Error struct {
 	Err string `json:"error"`
@@ -22,12 +12,6 @@ type Error struct {
 
 func (e Error) Error() string {
 	return e.Err
-}
-
-func parseError(line string) (Error, error) {
-	var ollamaError Error
-	err := json.Unmarshal([]byte(line), &ollamaError)
-	return ollamaError, err
 }
 
 type Model struct {
