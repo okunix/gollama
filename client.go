@@ -152,9 +152,9 @@ func (c *Client) Tags(ctx context.Context) ([]Model, error) {
 	return tagsResponse.Models, nil
 }
 
-func (c *Client) Ps(ctx context.Context) ([]Ps, error) {
+func (c *Client) Ps(ctx context.Context) ([]RunningModel, error) {
 	type response struct {
-		Models []Ps `json:"models"`
+		Models []RunningModel `json:"models"`
 	}
 	url := c.host + "/api/ps"
 	req, err := c.newRequest(ctx, "GET", url, nil)

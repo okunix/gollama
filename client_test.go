@@ -1,6 +1,7 @@
 package gollama
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -128,7 +129,9 @@ func TestDelete(t *testing.T) {
 }
 
 func TestPull(t *testing.T) {
-	err := client.Pull(t.Context(), "gemma3", false)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	err := client.Pull(ctx, "gemma3", false)
 	if err != nil {
 		t.Error(err.Error())
 		return

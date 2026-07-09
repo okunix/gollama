@@ -6,6 +6,15 @@ import (
 	"time"
 )
 
+type Metrics struct {
+	TotalDuration      int64 `json:"total_duration"`
+	LoadDuration       int64 `json:"load_duration"`
+	PromptEvalCount    int64 `json:"prompt_eval_count"`
+	PromptEvalDuration int64 `json:"prompt_eval_duration"`
+	EvalCount          int64 `json:"eval_count"`
+	EvalDuration       int64 `json:"eval_duration"`
+}
+
 type Error struct {
 	Err string `json:"error"`
 }
@@ -33,7 +42,7 @@ type ModelDetail struct {
 	QuantizationLevel string   `json:"quantization_level"`
 }
 
-type Ps struct {
+type RunningModel struct {
 	Name          string      `json:"name"`
 	Model         string      `json:"model"`
 	Size          int64       `json:"size"`
@@ -136,19 +145,14 @@ type GenerateOption struct {
 }
 
 type GenerateResponse struct {
-	Model              string    `json:"model"`
-	CreatedAt          time.Time `json:"created_at"`
-	Response           string    `json:"response"`
-	Thinking           string    `json:"thinking"`
-	Done               bool      `json:"done"`
-	DoneReason         string    `json:"done_reason"`
-	TotalDuration      int64     `json:"total_duration"`
-	LoadDuration       int64     `json:"load_duration"`
-	PromptEvalCount    int64     `json:"prompt_eval_count"`
-	PromptEvalDuration int64     `json:"prompt_eval_duration"`
-	EvalCount          int64     `json:"eval_count"`
-	EvalDuration       int64     `json:"eval_duration"`
-	Logprobs           []Logprob `json:"logprobs"`
+	Model      string    `json:"model"`
+	CreatedAt  time.Time `json:"created_at"`
+	Response   string    `json:"response"`
+	Thinking   string    `json:"thinking"`
+	Done       bool      `json:"done"`
+	DoneReason string    `json:"done_reason"`
+	Logprobs   []Logprob `json:"logprobs"`
+	Metrics
 }
 
 type Logprob struct {
@@ -165,19 +169,14 @@ type TopLogprob struct {
 }
 
 type GenerateStreamResponse struct {
-	Model              string    `json:"model"`
-	CreatedAt          time.Time `json:"created_at"`
-	Response           string    `json:"response"`
-	Thinking           string    `json:"thinking"`
-	Done               bool      `json:"done"`
-	DoneReason         string    `json:"done_reason"`
-	TotalDuration      int64     `json:"total_duration"`
-	LoadDuration       int64     `json:"load_duration"`
-	PromptEvalCount    int64     `json:"prompt_eval_count"`
-	PromptEvalDuration int64     `json:"prompt_eval_duration"`
-	EvalCount          int64     `json:"eval_count"`
-	EvalDuration       int64     `json:"eval_duration"`
-	Error              *string   `json:"error,omitempty"`
+	Model      string    `json:"model"`
+	CreatedAt  time.Time `json:"created_at"`
+	Response   string    `json:"response"`
+	Thinking   string    `json:"thinking"`
+	Done       bool      `json:"done"`
+	DoneReason string    `json:"done_reason"`
+	Error      *string   `json:"error,omitempty"`
+	Metrics
 }
 
 type EmbedRequest struct {
@@ -233,18 +232,13 @@ type ToolFunction struct {
 }
 
 type ChatResponse struct {
-	Model              string    `json:"model"`
-	CreatedAt          time.Time `json:"created_at"`
-	Message            Message   `json:"message"`
-	Done               bool      `json:"done"`
-	DoneReason         string    `json:"done_reason"`
-	TotalDuration      int64     `json:"total_duration"`
-	LoadDuration       int64     `json:"load_duration"`
-	PromptEvalCount    int64     `json:"prompt_eval_count"`
-	PromptEvalDuration int64     `json:"prompt_eval_duration"`
-	EvalCount          int64     `json:"eval_count"`
-	EvalDuration       int64     `json:"eval_duration"`
-	Logprobs           []Logprob `json:"logprobs"`
+	Model      string    `json:"model"`
+	CreatedAt  time.Time `json:"created_at"`
+	Message    Message   `json:"message"`
+	Done       bool      `json:"done"`
+	DoneReason string    `json:"done_reason"`
+	Logprobs   []Logprob `json:"logprobs"`
+	Metrics
 }
 
 type ChatStreamResponse struct {
