@@ -23,10 +23,15 @@ func main() {
 		panic(err)
 	}
 
+	var metrics gollama.Metrics
 	for resp, err := range stream {
 		if err != nil {
 			panic(err)
 		}
+		if resp.Done {
+			metrics = resp.Metrics
+		}
 		fmt.Print(resp.Response)
 	}
+	fmt.Printf("\n%+v\n", metrics)
 }
