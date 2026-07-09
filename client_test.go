@@ -64,7 +64,7 @@ func TestDetails(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	model := CreateModel{
+	model := CreateRequest{
 		Model:  "alpaca",
 		From:   "gemma3",
 		System: "You are Alpaca, a helpful AI assistant. You only answer with Emojis.",
@@ -79,7 +79,7 @@ func TestCreate(t *testing.T) {
 func TestCreateStream(t *testing.T) {
 	stream, err := client.CreateStream(
 		t.Context(),
-		CreateModel{
+		CreateRequest{
 			Model:  "alpaca",
 			From:   "gemma3",
 			System: "You are Alpaca, a helpful AI assistant. You only answer with Emojis.",
