@@ -240,7 +240,7 @@ func (c *Client) Delete(ctx context.Context, model string) error {
 	return nil
 }
 
-func (c *Client) Create(ctx context.Context, model CreateModel) error {
+func (c *Client) Create(ctx context.Context, model CreateRequest) error {
 	model.Stream = false
 	_, err := c.create(ctx, model)
 	return err
@@ -248,7 +248,7 @@ func (c *Client) Create(ctx context.Context, model CreateModel) error {
 
 func (c *Client) CreateStream(
 	ctx context.Context,
-	model CreateModel,
+	model CreateRequest,
 ) (iter.Seq2[Status, error], error) {
 	model.Stream = true
 	resp, err := c.create(ctx, model)
@@ -282,7 +282,7 @@ func (c *Client) CreateStream(
 	}, nil
 }
 
-func (c *Client) create(ctx context.Context, model CreateModel) (*http.Response, error) {
+func (c *Client) create(ctx context.Context, model CreateRequest) (*http.Response, error) {
 	url := c.host + "/api/create"
 	body, _ := c.toBody(model)
 	req, err := c.newRequest(ctx, "POST", url, body)
@@ -543,4 +543,69 @@ func (c *Client) Embed(ctx context.Context, embedReq EmbedRequest) (EmbedRespons
 	}
 	err = json.NewDecoder(resp.Body).Decode(&embedResp)
 	return embedResp, err
+}
+
+func (c *Client) chat(ctx context.Context, chatReq ChatRequest) (*http.Response, error) {
+	body, _ := c.toBody(chatReq)
+	url := c.host + "/api/chat"
+	req, err := c.newRequest(ctx, "POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseError(resp)
+	}
+	return resp, nil
+}
+
+func (c *Client) Chat(ctx context.Context, chatReq ChatRequest) (ChatResponse, error) {
+	chatReq.Stream = false
+	var chatResp ChatResponse
+	resp, err := c.chat(ctx, chatReq)
+	if err != nil {
+		return chatResp, err
+	}
+	defer resp.Body.Close()
+	err = json.NewDecoder(resp.Body).Decode(&chatResp)
+	return chatResp, err
+}
+
+func (c *Client) ChatStream(
+	ctx context.Context,
+	chatReq ChatRequest,
+) (iter.Seq2[ChatStreamResponse, error], error) {
+	chatReq.Stream = true
+	resp, err := c.chat(ctx, chatReq)
+	if err != nil {
+		return nil, err
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	return func(yield func(ChatStreamResponse, error) bool) {
+		defer resp.Body.Close()
+		for scanner.Scan() {
+			var streamResp ChatStreamResponse
+			line := scanner.Text()
+
+			err := json.Unmarshal([]byte(line), &streamResp)
+			if err != nil {
+				yield(ChatStreamResponse{}, err)
+				return
+			}
+			if streamResp.Error != nil {
+				yield(ChatStreamResponse{}, err)
+				return
+			}
+
+			if !yield(streamResp, nil) {
+				return
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			yield(ChatStreamResponse{}, err)
+		}
+	}, nil
 }

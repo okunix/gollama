@@ -54,7 +54,7 @@ type ModelDetails struct {
 	ModelInfo    map[string]any `json:"model_info"`
 }
 
-type CreateModel struct {
+type CreateRequest struct {
 	Model      string         `json:"model"`
 	From       string         `json:"from"`
 	Template   string         `json:"template"`
@@ -66,7 +66,7 @@ type CreateModel struct {
 	Stream     bool           `json:"stream"`
 }
 
-func (c CreateModel) Validate() error {
+func (c CreateRequest) Validate() error {
 	if len(strings.TrimSpace(c.Model)) == 0 {
 		return fmt.Errorf("model name is required")
 	}
@@ -181,15 +181,15 @@ type GenerateStreamResponse struct {
 }
 
 type EmbedRequest struct {
-	Model      string         `json:"model"`
-	Input      string         `json:"input"`
-	Truncate   bool           `json:"truncate"`
-	Dimensions int64          `json:"dimensions,omitempty"`
-	KeepAlive  string         `json:"keep_alive,omitempty"`
-	Options    []EmbedOptions `json:"options"`
+	Model      string    `json:"model"`
+	Input      string    `json:"input"`
+	Truncate   bool      `json:"truncate"`
+	Dimensions int64     `json:"dimensions,omitempty"`
+	KeepAlive  string    `json:"keep_alive,omitempty"`
+	Options    []Options `json:"options"`
 }
 
-type EmbedOptions struct {
+type Options struct {
 	Seed        int64   `json:"seed"`
 	Temperature float64 `json:"temperature"`
 	TopK        int64   `json:"top_k"`
@@ -206,4 +206,51 @@ type EmbedResponse struct {
 	TotalDuration   int64       `json:"total_duration"`
 	LoadDuration    int64       `json:"load_duration"`
 	PromptEvalCount int64       `json:"prompt_eval_count"`
+}
+
+type ChatRequest struct {
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Format      string    `json:"format,omitempty"`
+	Options     []Options `json:"options,omitempty"`
+	Tools       []Tool    `json:"tools"`
+	Stream      bool      `json:"stream"`
+	Think       bool      `json:"think,omitempty"`
+	KeepAlive   string    `json:"keep_alive,omitempty"`
+	Logprobs    bool      `json:"logprobs"`
+	TopLogprobs int64     `json:"top_logprobs"`
+}
+
+type Tool struct {
+	Type     string       `json:"type"`
+	Function ToolFunction `json:"function"`
+}
+
+type ToolFunction struct {
+	Name        string `json:"name"`
+	Parameters  string `json:"parameters"`
+	Description string `json:"description,omitempty"`
+}
+
+type ChatResponse struct {
+	Model              string    `json:"model"`
+	CreatedAt          time.Time `json:"created_at"`
+	Message            Message   `json:"message"`
+	Done               bool      `json:"done"`
+	DoneReason         string    `json:"done_reason"`
+	TotalDuration      int64     `json:"total_duration"`
+	LoadDuration       int64     `json:"load_duration"`
+	PromptEvalCount    int64     `json:"prompt_eval_count"`
+	PromptEvalDuration int64     `json:"prompt_eval_duration"`
+	EvalCount          int64     `json:"eval_count"`
+	EvalDuration       int64     `json:"eval_duration"`
+	Logprobs           []Logprob `json:"logprobs"`
+}
+
+type ChatStreamResponse struct {
+	Model     string    `json:"model"`
+	CreatedAt time.Time `json:"created_at"`
+	Message   Message   `json:"message"`
+	Done      bool      `json:"done"`
+	Error     *string   `json:"error,omitempty"`
 }
