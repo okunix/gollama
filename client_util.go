@@ -41,3 +41,30 @@ func (c *Client) toBody(a any) (io.Reader, error) {
 	}
 	return bytes.NewReader(b), nil
 }
+
+func (c *Client) do(req *http.Request) (*http.Response, error) {
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	// ollama uses 200 status code as a general success
+	// any other codes are considered to be error related
+	// https://docs.ollama.com/api/errors#status-codes
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		return nil, c.parseError(resp)
+	}
+	return resp, nil
+}
+
+func (c *Client) decode(req *http.Request, dest any) error {
+	resp, err := c.do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if dest == nil {
+		return nil
+	}
+	return json.NewDecoder(resp.Body).Decode(dest)
+}

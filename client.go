@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"iter"
 	"net/http"
 	"time"
@@ -71,12 +70,8 @@ func (c *Client) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
+	if _, err := c.do(req); err != nil {
 		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return c.parseError(resp)
 	}
 	return nil
 }
@@ -92,30 +87,17 @@ func (c *Client) Version(ctx context.Context) (string, error) {
 	}
 
 	url := c.host + "/api/version"
-
 	req, err := c.newRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to get ollama version: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", c.parseError(resp)
-	}
-
-	var getVersionResponse response
-
-	err = json.NewDecoder(resp.Body).Decode(&getVersionResponse)
-	if err != nil {
+	var resp response
+	if err := c.decode(req, &resp); err != nil {
 		return "", err
 	}
 
-	return getVersionResponse.Version, nil
+	return resp.Version, nil
 }
 
 // Tags lists the models currently available locally on the Ollama server.
@@ -127,28 +109,19 @@ func (c *Client) Tags(ctx context.Context) ([]Model, error) {
 	type response struct {
 		Models []Model `json:"models"`
 	}
+
 	url := c.host + "/api/tags"
 	req, err := c.newRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-
-	var tagsResponse response
-	err = json.NewDecoder(resp.Body).Decode(&tagsResponse)
-	if err != nil {
+	var resp response
+	if err := c.decode(req, &resp); err != nil {
 		return nil, err
 	}
 
-	return tagsResponse.Models, nil
+	return resp.Models, nil
 }
 
 // Ps lists the models currently loaded into memory on the Ollama server.
@@ -165,22 +138,12 @@ func (c *Client) Ps(ctx context.Context) ([]RunningModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
+
+	var resp response
+	if err := c.decode(req, &resp); err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-
-	var psResponse response
-	err = json.NewDecoder(resp.Body).Decode(&psResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	return psResponse.Models, nil
+	return resp.Models, nil
 }
 
 // ShowModelDetails retrieves detailed information about a specific model,
@@ -200,28 +163,19 @@ func (c *Client) ShowModelDetails(
 		Model   string `json:"model"`
 		Verbose bool   `json:"verbose"`
 	}
+
 	url := c.host + "/api/show"
 	body, _ := c.toBody(request{Model: model, Verbose: verbose})
 	req, err := c.newRequest(ctx, "POST", url, body)
 	if err != nil {
 		return ModelDetails{}, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
+
+	var resp ModelDetails
+	if err := c.decode(req, &resp); err != nil {
 		return ModelDetails{}, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return ModelDetails{}, c.parseError(resp)
-	}
-
-	var detailsResponse ModelDetails
-	err = json.NewDecoder(resp.Body).Decode(&detailsResponse)
-	if err != nil {
-		return ModelDetails{}, err
-	}
-
-	return detailsResponse, nil
+	return resp, nil
 }
 
 // Delete removes a model and its associated data from the Ollama server.
@@ -232,18 +186,16 @@ func (c *Client) Delete(ctx context.Context, model string) error {
 	type request struct {
 		Model string `json:"model"`
 	}
+
 	url := c.host + "/api/delete"
 	body, _ := c.toBody(request{Model: model})
 	req, err := c.newRequest(ctx, "DELETE", url, body)
 	if err != nil {
 		return err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
+
+	if err := c.decode(req, nil); err != nil {
 		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return c.parseError(resp)
 	}
 	return nil
 }
@@ -256,8 +208,12 @@ func (c *Client) Delete(ctx context.Context, model string) error {
 // as the model is being created.
 func (c *Client) Create(ctx context.Context, model CreateRequest) error {
 	model.Stream = false
-	_, err := c.create(ctx, model)
-	return err
+	resp, err := c.create(ctx, model)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
 }
 
 // CreateStream creates a new model and returns an
@@ -305,14 +261,7 @@ func (c *Client) create(ctx context.Context, model CreateRequest) (*http.Respons
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-	return resp, nil
+	return c.do(req)
 }
 
 // Copy duplicates an existing model under a new name.
@@ -330,14 +279,7 @@ func (c *Client) Copy(ctx context.Context, src, dest string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return c.parseError(resp)
-	}
-	return nil
+	return c.decode(req, nil)
 }
 
 func (c *Client) pull(
@@ -357,14 +299,7 @@ func (c *Client) pull(
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-	return resp, nil
+	return c.do(req)
 }
 
 // Pull downloads a model to the local Ollama server, waiting for the
@@ -375,8 +310,12 @@ func (c *Client) pull(
 //
 // It returns an error if the model cannot be downloaded.
 func (c *Client) Pull(ctx context.Context, model string, insecure bool) error {
-	_, err := c.pull(ctx, model, insecure, false)
-	return err
+	resp, err := c.pull(ctx, model, insecure, false)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
 }
 
 // PullStream downloads a model to the local Ollama server and returns an
@@ -445,14 +384,7 @@ func (c *Client) push(
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-	return resp, nil
+	return c.do(req)
 }
 
 // Push uploads a model to a registry, waiting for the upload to complete
@@ -463,8 +395,12 @@ func (c *Client) push(
 //
 // It returns an error if the model cannot be uploaded.
 func (c *Client) Push(ctx context.Context, model string, insecure bool) error {
-	_, err := c.push(ctx, model, insecure, false)
-	return err
+	resp, err := c.push(ctx, model, insecure, false)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
 }
 
 // PushStream uploads a model to a registry and returns an iterator that
@@ -523,14 +459,7 @@ func (c *Client) generate(ctx context.Context, genReq GenerateRequest) (*http.Re
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-	return resp, nil
+	return c.do(req)
 }
 
 // Generate produces a completion for the given prompt using a GenerateRequest,
@@ -608,15 +537,7 @@ func (c *Client) Embed(ctx context.Context, embedReq EmbedRequest) (EmbedRespons
 	if err != nil {
 		return embedResp, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return embedResp, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return embedResp, c.parseError(resp)
-	}
-	err = json.NewDecoder(resp.Body).Decode(&embedResp)
+	err = c.decode(req, &embedResp)
 	return embedResp, err
 }
 
@@ -627,14 +548,7 @@ func (c *Client) chat(ctx context.Context, chatReq ChatRequest) (*http.Response,
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseError(resp)
-	}
-	return resp, nil
+	return c.do(req)
 }
 
 // Chat generates the next message in a conversation using a ChatRequest,
