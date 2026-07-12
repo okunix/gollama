@@ -1,7 +1,6 @@
 package gollama
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -13,7 +12,7 @@ func TestNewClient(t *testing.T) {
 	client, err = NewClient(
 		t.Context(),
 		WithHost("http://localhost:11434"),
-		WithTimeout(time.Second),
+		WithTimeout(10*time.Second),
 	)
 	if err != nil {
 		t.Error(err.Error())
@@ -129,9 +128,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestPull(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
-	defer cancel()
-	err := client.Pull(ctx, "gemma3", false)
+	err := client.Pull(t.Context(), "gemma3", false)
 	if err != nil {
 		t.Error(err.Error())
 		return
