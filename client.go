@@ -15,7 +15,7 @@ type Client struct {
 	client *http.Client
 }
 
-type clientOption func(c *Client) error
+type ClientOption func(c *Client) error
 
 // NewClient creates a new Client for interacting with an Ollama server,
 // applying any given options to configure it. It verifies that the server
@@ -23,7 +23,7 @@ type clientOption func(c *Client) error
 //
 // It returns an error if any option fails to apply or the server cannot
 // be reached.
-func NewClient(ctx context.Context, opts ...clientOption) (*Client, error) {
+func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	client := Client{client: http.DefaultClient}
 	for _, opt := range opts {
 		if err := opt(&client); err != nil {
@@ -36,7 +36,7 @@ func NewClient(ctx context.Context, opts ...clientOption) (*Client, error) {
 
 // WithToken configures the Client to authenticate requests using the
 // given token.
-func WithToken(token string) clientOption {
+func WithToken(token string) ClientOption {
 	return func(c *Client) error {
 		c.token = token
 		return nil
@@ -45,7 +45,7 @@ func WithToken(token string) clientOption {
 
 // WithHost configures the Client to send requests to the given Ollama
 // server host.
-func WithHost(host string) clientOption {
+func WithHost(host string) ClientOption {
 	return func(c *Client) error {
 		c.host = host
 		return nil
@@ -54,7 +54,7 @@ func WithHost(host string) clientOption {
 
 // WithTimeout configures the Client's underlying HTTP client to time out
 // requests after the given duration.
-func WithTimeout(timeout time.Duration) clientOption {
+func WithTimeout(timeout time.Duration) ClientOption {
 	return func(c *Client) error {
 		c.client.Timeout = timeout
 		return nil
