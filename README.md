@@ -14,6 +14,8 @@ Requires a Go version with range-over-func iterator support (Go 1.23+).
 
 ## Quick start
 
+Package documentation can be found on [pkg.go.dev](https://pkg.go.dev/github.com/okunix/gollama)
+
 ```go
 package main
 
